@@ -1,0 +1,119 @@
+// Atrium - Prisma schema
+// PHASE 1 STUB: datasource + generator only.
+// Domain models (Venue, Room, EquipmentType, User, Booking, BookingLineItem,
+// Payment, AuditEvent) are designed and added in Phase 2, after the
+// architecture doc (ARCHITECTURE.md) is reviewed and approved.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Neon: `url` is the pooled connection (PgBouncer, port 5432 with
+  // -pooler in the host), used at runtime by the app.
+  // `directUrl` is the unpooled connection, required by Prisma Migrate
+  // because pooled/transaction-mode connections don't support the
+  // session-level locks migrations need.
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
+}
+
+// --- Phase 2 will add here ---
+model Venue {
+  id        String   @id @default(uuid())
+  name      String
+  city      String?
+  createdAt DateTime @default(now())
+
+  rooms     Room[]
+  equipment EquipmentType[]
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  venue     Venue    @relation(fields: [venueId], references: [id])
+  venueId   String
+  name      String
+  capacity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  bookings  Booking[]
+}
+
+model EquipmentType {
+  id         String   @id @default(uuid())
+  venue      Venue    @relation(fields: [venueId], references: [id])
+  venueId    String
+  name       String
+  totalUnits Int
+  createdAt  DateTime @default(now())
+
+  lineItems  BookingLineItem[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String
+  createdAt DateTime @default(now())
+
+  bookings  Booking[]
+}
+
+enum BookingStatus {
+  DRAFT
+  HELD
+  PENDING_PAYMENT
+  CONFIRMED
+  COMPLETED
+  EXPIRED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model Booking {
+  id         String             @id @default(uuid())
+  user       User?              @relation(fields: [userId], references: [id])
+  userId     String?
+  room       Room               @relation(fields: [roomId], references: [id])
+  roomId     String
+  start      DateTime
+  end        DateTime
+  status     BookingStatus      @default(DRAFT)
+  expiresAt  DateTime?
+  createdAt  DateTime           @default(now())
+
+  lineItems  BookingLineItem[]
+  payments   Payment[]
+}
+
+model BookingLineItem {
+  id              String        @id @default(uuid())
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  bookingId       String
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id])
+  equipmentTypeId String
+  quantity        Int
+}
+
+model Payment {
+  id         String   @id @default(uuid())
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  bookingId  String
+  providerId String?
+  amount     Int
+  currency   String
+  status     String
+  createdAt  DateTime @default(now())
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}

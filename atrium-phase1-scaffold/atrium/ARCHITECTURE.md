@@ -53,6 +53,20 @@ insufficient (e.g. EXCLUDE performance issues under load), the repo will
 retain this first-draft commit and append a rationale explaining what changed
 and why.
 
+Stack choice
+--
+I will implement Phase 1 using a PERN stack: Postgres, Express (Node + TypeScript),
+React, and a Prisma ORM on the backend. Rationale: tight Postgres feature parity
+(needed for `tstzrange`, `EXCLUDE` constraints and advisory locks), excellent
+TypeScript ecosystem tooling across backend and frontend, and Prisma simplifies
+the data layer without hiding the ability to drop into raw SQL for the DB-level
+invariants we require. Alternative considered: Django + Python. I rejected it
+because Prisma/Postgres combo gives faster iteration for raw SQL + JS-based
+tooling and integrates cleanly with the existing TypeScript codebase in this
+repo. The trade-off is a slightly heavier runtime surface for transaction
+management compared to Django ORM, but the team familiarity and consistency
+across frontend/backend wins here.
+
 ## 4. Payment Integrity Model
 
 TODO (Phase 6) — how exactly-once effect is achieved over Paygate's
