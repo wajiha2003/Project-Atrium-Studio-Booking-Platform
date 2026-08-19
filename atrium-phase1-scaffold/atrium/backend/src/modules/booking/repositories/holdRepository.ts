@@ -14,9 +14,14 @@ export async function createHold(opts: {
   const endDt = new Date(end);
 
   return await prisma.$transaction(async (tx) => {
+    const dbUrl = process.env.DATABASE_URL ?? '';
+    const isPostgres = dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://');
+
     // Acquire an advisory lock scoped to the room id to serialize competing
-    // holds for the same room across instances.
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${BigInt(hashCode(roomId))})`;
+    // holds for the same room across instances. Only available on Postgres.
+    if (isPostgres) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${BigInt(hashCode(roomId))})`;
+    }
 
     // Check for overlapping bookings on the room in HELD/PENDING_PAYMENT/CONFIRMED
     const conflicts = await tx.booking.findFirst({
@@ -38,7 +43,9 @@ export async function createHold(opts: {
     // For each equipment line item, acquire advisory lock per equipmentType and
     // check overlapping quantities.
     for (const line of equipment) {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${BigInt(hashCode(line.equipmentTypeId))})`;
+      if (isPostgres) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${BigInt(hashCode(line.equipmentTypeId))})`;
+      }
 
       const sumResult: any = await tx.$queryRaw`
         SELECT COALESCE(SUM("BookingLineItem"."quantity"),0) as sum

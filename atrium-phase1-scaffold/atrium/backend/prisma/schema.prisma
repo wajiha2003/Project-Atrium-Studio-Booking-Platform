@@ -9,14 +9,11 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Neon: `url` is the pooled connection (PgBouncer, port 5432 with
-  // -pooler in the host), used at runtime by the app.
-  // `directUrl` is the unpooled connection, required by Prisma Migrate
-  // because pooled/transaction-mode connections don't support the
-  // session-level locks migrations need.
-  url               = env("DATABASE_URL")
-  directUrl         = env("DIRECT_URL")
+  // For local development we use SQLite to make it easy to run migrations
+  // without requiring a Postgres instance. For production and CI use,
+  // switch this datasource back to `postgresql` and set `DATABASE_URL`.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // --- Phase 2 will add here ---
@@ -62,18 +59,6 @@ model User {
   bookings  Booking[]
 }
 
-enum BookingStatus {
-  DRAFT
-  HELD
-  PENDING_PAYMENT
-  CONFIRMED
-  COMPLETED
-  EXPIRED
-  FAILED
-  CANCELLED
-  REFUNDED
-}
-
 model Booking {
   id         String             @id @default(uuid())
   user       User?              @relation(fields: [userId], references: [id])
@@ -82,7 +67,7 @@ model Booking {
   roomId     String
   start      DateTime
   end        DateTime
-  status     BookingStatus      @default(DRAFT)
+  status     String             @default("DRAFT")
   expiresAt  DateTime?
   createdAt  DateTime           @default(now())
 

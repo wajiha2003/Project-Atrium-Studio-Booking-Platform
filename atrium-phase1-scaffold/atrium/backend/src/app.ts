@@ -45,7 +45,10 @@ export function buildApp(): Express {
   app.use('/bookings', bookingRoutes);
   // TODO(Phase 5): app.use('/equipment', equipmentRoutes);
   // TODO(Phase 6): app.use('/payments', paymentRoutes);
-  // TODO(Phase 6): app.use('/webhooks/paygate', paygateWebhookRoutes);
+  // Paygate webhook route (Phase 6)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const paygateWebhook = require('./modules/payment/controllers/webhookController').default;
+  app.post('/webhooks/paygate', paygateWebhook.handlePaygateWebhook);
 
   // TODO(Phase 5+): app.use(errorHandler) - must be last, converts thrown
   // domain errors (e.g. IllegalTransitionError) into clean 409s per brief.
