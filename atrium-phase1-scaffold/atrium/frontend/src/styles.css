@@ -1,0 +1,7 @@
+body { font-family: Arial, sans-serif; padding: 20px; }
+.container { max-width: 800px; margin: 0 auto }
+.form { display: grid; gap: 12px; }
+label { display: flex; flex-direction: column; font-weight: 600 }
+input, textarea { padding: 8px; font-size: 14px }
+button { padding: 10px 16px }
+.result { background: #f3f3f3; padding: 12px; white-space: pre-wrap }
