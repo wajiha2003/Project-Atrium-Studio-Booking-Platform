@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  VENUE_STAFF
+  VENUE_ADMIN
+  PLATFORM_ADMIN
+}
+
+enum BookingStatus {
+  DRAFT
+  HELD
+  PENDING_PAYMENT
+  CONFIRMED
+  EXPIRED
+  FAILED
+  PENDING
+  CANCELLED
+  COMPLETED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  INITIATED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+model Venue {
+  id                  Int             @id @default(autoincrement())
+  name                String
+  city                String
+  address             String
+  operatingSchedule   String?
+  cancellationPolicy  String?
+  rooms               Room[]
+  equipment           EquipmentType[]
+  users               User[]
+  bookings            Booking[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(CUSTOMER)
+  venueId      Int?
+  venue        Venue?    @relation(fields: [venueId], references: [id])
+  bookings     Booking[]
+  auditEvents  AuditEvent[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Room {
+  id           Int       @id @default(autoincrement())
+  venueId      Int
+  venue        Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  name         String
+  capacity     Int       @default(1)
+  hourlyRate   Decimal   @db.Decimal(10, 2)
+  amenities    String?
+  minDuration  Int       @default(1)
+  maxDuration  Int       @default(8)
+  bookings     Booking[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model EquipmentType {
+  id           Int              @id @default(autoincrement())
+  venueId      Int
+  venue        Venue            @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  name         String
+  hourlyRate   Decimal          @db.Decimal(10, 2)
+  totalUnits   Int              @default(0)
+  lineItems    BookingLineItem[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model Booking {
+  id           Int              @id @default(autoincrement())
+  reference    String           @unique
+  userId       Int
+  roomId       Int
+  venueId      Int
+  user         User             @relation(fields: [userId], references: [id])
+  room         Room             @relation(fields: [roomId], references: [id])
+  venue        Venue            @relation(fields: [venueId], references: [id])
+  startTime    DateTime
+  endTime      DateTime
+  status       BookingStatus    @default(PENDING)
+  totalAmount  Decimal          @db.Decimal(10, 2)
+  expiresAt    DateTime?
+  checkoutExpiresAt DateTime?
+  lineItems    BookingLineItem[]
+  payments     Payment[]
+  auditEvents  AuditEvent[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model BookingLineItem {
+  id              Int           @id @default(autoincrement())
+  bookingId       Int
+  equipmentTypeId Int
+  quantity        Int
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id])
+}
+
+model Payment {
+  id                Int      @id @default(autoincrement())
+  bookingId         Int
+  providerReference String?
+  amount            Decimal  @db.Decimal(10, 2)
+  currency          String   @default("USD")
+  status            PaymentStatus @default(INITIATED)
+  idempotencyKey    String   @unique
+  webhookEventId    String?  @unique
+  capturedAt        DateTime?
+  refundedAt        DateTime?
+  booking           Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AuditEvent {
+  id        Int       @id @default(autoincrement())
+  actorId   Int?
+  bookingId Int?
+  fromState String?
+  toState   String?
+  reason    String?
+  actor     User?     @relation(fields: [actorId], references: [id])
+  booking   Booking?  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  timestamp DateTime  @default(now())
+}

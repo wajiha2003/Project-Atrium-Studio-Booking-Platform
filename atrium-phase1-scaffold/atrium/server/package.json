@@ -1,0 +1,33 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon --exec \"node --dns-result-order=ipv4first\" src/index.js",
+    "start": "node --dns-result-order=ipv4first src/index.js",
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--dns-result-order=ipv4first node --test test/authorization.test.js",
+    "seed": "cross-env NODE_OPTIONS=--dns-result-order=ipv4first prisma db seed",
+    "prisma": "prisma"
+  },
+  "type": "module",
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "jsonwebtoken": "latest"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "nodemon": "latest",
+    "prisma": "^6.19.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}
