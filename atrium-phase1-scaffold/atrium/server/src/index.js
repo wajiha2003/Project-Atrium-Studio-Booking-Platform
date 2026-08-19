@@ -11,7 +11,21 @@ let prisma = new PrismaClient()
 const port = process.env.PORT || 4000
 const jwtSecret = process.env.JWT_SECRET || 'development-secret'
 
-app.use(cors())
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  process.env.CLIENT_URL,
+].filter(Boolean)
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman, server-to-server)
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin)) return callback(null, true)
+    callback(new Error(`CORS: origin ${origin} not allowed`))
+  },
+  credentials: true,
+}))
 app.use(express.json())
 
 const publicUser = user => ({ id: user.id, firstName: user.firstName, lastName: user.lastName, name: `${user.firstName} ${user.lastName}`, email: user.email, role: user.role, venueId: user.venueId })
@@ -111,4 +125,4 @@ app.get('/api/audit-events/:id', auth, asyncRoute(async (req, res) => { res.json
 app.use((error, req, res, next) => { if (!error.status || error.status >= 500) console.error(error); res.status(error.status || (error.code === 'P2002' ? 409 : 500)).json({ error: error.code === 'P2002' ? 'A record with that unique value already exists' : error.message || 'Server error' }) })
 export const setPrismaClient = client => { prisma = client }
 export { app }
-if (process.env.NODE_ENV !== 'test') app.listen(port, () => console.log(`Atrium API running on http://localhost:${port}`))
+if (process.env.NODE_ENV !== 'test') app.listen(port, '0.0.0.0', () => console.log(`Atrium API running on port ${port}`))
