@@ -6,8 +6,8 @@
     "dev": "nodemon --exec \"node --dns-result-order=ipv4first\" src/index.js",
     "start": "node --dns-result-order=ipv4first src/index.js",
     "test": "cross-env NODE_ENV=test NODE_OPTIONS=--dns-result-order=ipv4first node --test test/authorization.test.js",
-    "test:concurrency": "cross-env NODE_ENV=test NODE_OPTIONS=--dns-result-order=ipv4first node --test test/concurrency.test.js",
-    "test:all": "cross-env NODE_ENV=test NODE_OPTIONS=--dns-result-order=ipv4first node --test test/authorization.test.js test/concurrency.test.js",
+    "test:concurrency": "cross-env NODE_ENV=test NODE_OPTIONS=--dns-result-order=ipv4first node --env-file=.env --test test/concurrency.test.js",
+    "test:all": "cross-env NODE_ENV=test NODE_OPTIONS=--dns-result-order=ipv4first node --env-file=.env --test test/authorization.test.js test/concurrency.test.js",
     "seed": "cross-env NODE_OPTIONS=--dns-result-order=ipv4first prisma db seed",
     "prisma": "prisma"
   },

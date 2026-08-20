@@ -17,20 +17,9 @@
  *
  * Run:
  *   npm run test:concurrency
+ * (DATABASE_URL and JWT_SECRET are loaded from server/.env via --env-file)
  */
 
-// Load .env before any Prisma or app imports so DATABASE_URL is available.
-// In CI/Railway, DATABASE_URL is already in the process environment.
-// Locally, it lives in server/.env — load it only if the file exists.
-import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
-import { existsSync } from 'node:fs'
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const require = createRequire(import.meta.url)
-const dotenv = require('dotenv')
-const envPath = resolve(__dirname, '../.env')
-if (existsSync(envPath)) dotenv.config({ path: envPath })
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
@@ -137,11 +126,18 @@ test('200 concurrent bookings against 3 replicas: exactly 1 room success, ≤3 e
   // 2. Start three independent Express servers, each with its own
   //    PrismaClient — exactly as three separate OS processes would behave.
   //    Each gets its own connection pool sized at POOL_SIZE.
+  //    Neon pooler URLs (-pooler hostname) don't support connection_limit;
+  //    convert to the direct endpoint by stripping "-pooler" from the host.
   // -------------------------------------------------------------------------
+  const rawUrl = process.env.DATABASE_URL
+  const directUrl = rawUrl.replace(/-pooler(\.\S+\.aws\.neon\.tech)/, '$1')
+  if (rawUrl !== directUrl) {
+    console.log('  Note: converted pooler URL to direct URL for replica connections')
+  }
+
   const replicas = await Promise.all(
     Array.from({ length: REPLICA_COUNT }, () => {
-      // Append connection_limit to the DATABASE_URL for this replica's pool
-      const url = new URL(process.env.DATABASE_URL)
+      const url = new URL(directUrl)
       url.searchParams.set('connection_limit', String(POOL_SIZE))
       url.searchParams.set('connect_timeout', '30')
       const p = new PrismaClient({ datasources: { db: { url: url.toString() } } })
