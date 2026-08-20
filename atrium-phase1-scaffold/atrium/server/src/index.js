@@ -122,7 +122,28 @@ app.get('/api/payments/:id', auth, asyncRoute(async (req, res) => { res.json(awa
 app.get('/api/audit-events', auth, asyncRoute(async (req, res) => { res.json(await prisma.auditEvent.findMany({ include: { actor: true, booking: true }, orderBy: { timestamp: 'desc' } })) }))
 app.get('/api/audit-events/:id', auth, asyncRoute(async (req, res) => { res.json(await prisma.auditEvent.findUniqueOrThrow({ where: { id: id(req.params.id) }, include: { actor: true, booking: true } })) }))
 
-app.use((error, req, res, next) => { if (!error.status || error.status >= 500) console.error(error); res.status(error.status || (error.code === 'P2002' ? 409 : 500)).json({ error: error.code === 'P2002' ? 'A record with that unique value already exists' : error.message || 'Server error' }) })
+app.use((error, req, res, next) => {
+  if (!error.status || error.status >= 500) {
+    // Don't log expected concurrency rejections as errors
+    if (!['P2034', 'P2024', 'P2028'].includes(error.code)) console.error(error)
+  }
+  // P2034 = write conflict / serialization failure → 409 Conflict (retry)
+  // P2024 = connection pool timeout → 503 Service Unavailable
+  // P2028 = transaction timeout → 503 Service Unavailable
+  // P2002 = unique constraint violation → 409 Conflict
+  const status = error.status
+    || (error.code === 'P2034' ? 409
+      : error.code === 'P2002' ? 409
+      : error.code === 'P2024' ? 503
+      : error.code === 'P2028' ? 503
+      : 500)
+  const message = error.code === 'P2034' ? 'Booking conflict — please retry'
+    : error.code === 'P2002' ? 'A record with that unique value already exists'
+    : error.code === 'P2024' ? 'Server busy — please retry'
+    : error.code === 'P2028' ? 'Server busy — please retry'
+    : error.message || 'Server error'
+  res.status(status).json({ error: message })
+})
 export const setPrismaClient = client => { prisma = client }
 export { app }
 if (process.env.NODE_ENV !== 'test') app.listen(port, '0.0.0.0', () => console.log(`Atrium API running on port ${port}`))

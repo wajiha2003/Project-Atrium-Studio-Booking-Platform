@@ -1,10 +1,10 @@
-import { Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
 export const ACTIVE_BOOKING_STATES = ['HELD', 'PENDING_PAYMENT', 'CONFIRMED']
 const HOLD_MINUTES = 8
 const CHECKOUT_MINUTES = 10
 const BUFFER_MINUTES = 15
-const transactionOptions = { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 30000 }
+const transactionOptions = { isolationLevel: 'Serializable', maxWait: 10000, timeout: 30000 }
 const transitionMap = {
   DRAFT: ['HELD', 'CANCELLED'],
   HELD: ['PENDING_PAYMENT', 'EXPIRED', 'CANCELLED'],
