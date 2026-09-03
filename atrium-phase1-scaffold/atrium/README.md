@@ -1,4 +1,4 @@
-# Atrium
+# Project Atrium - MAIN BRANCH
 
 A PERN studio booking platform built against the Adept Tech Solutions assessment brief.
 
