@@ -219,3 +219,4 @@ Deployed on Railway (API) + Netlify (frontend) + Neon (database). See `DEPLOY.md
 Railway environment variables required: `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `CLIENT_URL`
 
 Netlify environment variable required: `VITE_API_URL`
+GitHub Desktop practice branch created on September 3, 2026.
